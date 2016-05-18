@@ -10,15 +10,13 @@ import lejos.nxt.SensorPort;
 import lejos.nxt.Sound;
 
 public class Balance {
-	static final double Kp = 10;	//340                             
-	static final double Ki = 0.5;	//50                              
-	static final double Kd = 1;	//300 
+	
 	static final int Tp = 20;
 	static final double MOVING_AVG_PERCENTAGE_GYRO=0.9;
 	static final int max=1000;
 	static final int min=-max;
-	static final int intMax=5000;
-	static final int intMin=-intMax;
+	private PIDcontroller angleV;
+	
 	double offset;
 	double angle=0;
 
@@ -30,6 +28,7 @@ public class Balance {
 		this.gyro=new GyroSensor(SensorPort.S2);
 		this.mr =new NXTMotor(MotorPort.B); 
 		this.ml =new NXTMotor(MotorPort.C);
+		this.angleV=new PIDcontroller();
 		setOffset();
 	}
 
@@ -51,25 +50,28 @@ public class Balance {
 	}
 	//set the Motor power to both Motors same
 	public void setMotors(double power) {
-		/*setMotors(mrls + 18*Math.sin(System.currentTimeMillis()/(double)50),
-				mrls + 18*Math.sin(System.currentTimeMillis()/(double)50 + Math.PI));*/
 		setMotors(power, power);
 	}
 	//set the Motor power different for each
 	public void setMotors(double r, double l) {
-		mr.setPower((int) Math.abs(r));
+		mr.setPower(calcPower(r));
 		if (r < 0) {
 			mr.backward();
 		} else if (r > 0) {
 			mr.forward();
 		}
 
-		ml.setPower((int) Math.abs(l));
+		ml.setPower(calcPower(l));
 		if (l < 0) {
 			ml.backward();
 		} else if (l > 0) {
 			ml.forward();
 		}
+	}
+	//calculate the Power
+	public int calcPower(double out){
+		
+		return (int)Math.abs(out);//(55 + (Math.abs(out) * 45) / 100); //
 	}
 
 	//balancing the Robot with a PID controller
@@ -78,10 +80,6 @@ public class Balance {
 		//logging the gyro angle velocity an sending it to the Pc
 		Logging.logging();
 
-		double lastError = 0; 
-
-		double integral = 0;
-		double derivative = 0;  // ! the place where we will store the derivative
 		double dt=25;
 		double lastTime=0;
 		boolean setLastTime=true;
@@ -89,7 +87,6 @@ public class Balance {
 		double gyroV=0;
 		double gyroA=0;
 		double out=0;
-		double error =  0;
 
 		LCD.clear();
 		LCD.drawString("Starting balancing in 5sec, please put up the robot", 0, 0);
@@ -123,26 +120,7 @@ public class Balance {
 			}
 
 			//gyroA = gyroA + (gyroV * ((double) dt / 1000));
-			error=gyroV-offset;//////////////////////////////////???????????????????????
-			integral = integral + error*dt;        
-			derivative = (error - lastError)/dt;  
-
-			//f(error<2 && error>-2){
-			//	error=0;
-			//}
-			//if(error!=0){
-			if(integral>intMax){
-				integral=intMax;
-			}
-			if(integral<intMin){
-				integral=intMin;
-			}
-			//reset Integral
-			if(Math.signum(error)!=Math.signum(lastError))
-			{
-				integral=0;
-			}
-			out =Kp*error + Ki*integral + Kd*derivative;
+			out =angleV.calcOutput(gyroV, offset, dt);
 
 			if(out>max){
 				out=max;
@@ -155,13 +133,13 @@ public class Balance {
 
 
 			Logging.logger.writeLog(gyroV);
-			Logging.logger.writeLog((double)Ki*integral);
-			Logging.logger.writeLog((double)Kd*derivative);
+			Logging.logger.writeLog(angleV.getKi()*angleV.getIntegral());
+			Logging.logger.writeLog(angleV.getKd()*angleV.getDerivative());
 			Logging.logger.writeLog(out);
 			Logging.logger.finishLine();
 			//}
 
-			lastError = error ;
+			
 			lastTime=now;
 			Delay.msDelay(Tp); //Waiting Tp time
 		} //! done with loop, go back and do it again.
