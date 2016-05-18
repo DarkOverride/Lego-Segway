@@ -4,13 +4,12 @@ import lejos.nxt.SensorPort;
 import lejos.nxt.addon.AccelHTSensor;
 
 public class AngleFilter {
-		private double angle = 0.0;
-		private static double OFFSET = 270;
 		private AccelHTSensor acc;
-		private double accY;
+		private double angleY;
+		private double angle;
 
-		public double getAccY() {
-			return accY;
+		public double getAngleY() {
+			return angleY;
 		}
 
 		// h is the sample-time
@@ -25,9 +24,10 @@ public class AngleFilter {
 			
 			double accX = acc.getXAccel();
 			double accZ = acc.getZAccel();
+			
+			angleY=Math.toDegrees(Math.atan2(accX, accZ))-90;
 
-			accY = Math.toDegrees((Math.atan2(accX, accZ) + Math.PI))- OFFSET;
-			angle = (0.9 * (angle + (gyroAngle)) + 0.1 * accY);
+			angle = (0.9 * (gyroAngle) + 0.1 * angleY);
 
 			return angle;
 		}

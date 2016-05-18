@@ -16,6 +16,7 @@ public class Balance {
 	static final int max=1000;
 	static final int min=-max;
 	private PIDcontroller angleV;
+	private AngleFilter angleFilter;
 	
 	double offset;
 	double angle=0;
@@ -29,6 +30,7 @@ public class Balance {
 		this.mr =new NXTMotor(MotorPort.B); 
 		this.ml =new NXTMotor(MotorPort.C);
 		this.angleV=new PIDcontroller();
+		this.angleFilter=new AngleFilter();
 		setOffset();
 	}
 
@@ -104,8 +106,9 @@ public class Balance {
 			LCD.clear();
 			now=System.currentTimeMillis();
 
-			gyroV = gyroV * MOVING_AVG_PERCENTAGE_GYRO +
-				  (gyro.getAngularVelocity() - offset) * (1 - MOVING_AVG_PERCENTAGE_GYRO);//////////////////////////////?
+			gyroV =gyro.getAngularVelocity(); 
+					//gyroV * MOVING_AVG_PERCENTAGE_GYRO +
+				 	//(gyro.getAngularVelocity() - offset) * (1 - MOVING_AVG_PERCENTAGE_GYRO);
 			
 			//When the Segway falls down ->break
 			if(Math.abs(gyroV)>90){
@@ -119,8 +122,8 @@ public class Balance {
 				setLastTime=false;
 			}
 
-			//gyroA = gyroA + (gyroV * ((double) dt / 1000));
-			out =angleV.calcOutput(gyroV, offset, dt);
+			gyroA = angleFilter.compFilt(gyroV, dt);
+			out =angleV.calcOutput(gyroA, 0.0, dt);
 
 			if(out>max){
 				out=max;
@@ -132,8 +135,8 @@ public class Balance {
 
 
 
-			Logging.logger.writeLog(gyroV);
-			Logging.logger.writeLog(angleV.getKi()*angleV.getIntegral());
+			Logging.logger.writeLog(gyroV*dt);
+			Logging.logger.writeLog(angleFilter.getAngleY());
 			Logging.logger.writeLog(angleV.getKd()*angleV.getDerivative());
 			Logging.logger.writeLog(out);
 			Logging.logger.finishLine();

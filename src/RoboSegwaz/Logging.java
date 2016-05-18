@@ -16,7 +16,7 @@ public class Logging {
 	static LogColumn ki= new LogColumn("ki", LogColumn.DT_DOUBLE,2);
 	static LogColumn kd= new LogColumn("kd", LogColumn.DT_DOUBLE,3);
 	static LogColumn out= new LogColumn("out", LogColumn.DT_DOUBLE,4);
-	static LogColumn[] columnDefs = new LogColumn[] { gyroValue, ki, kd, out }; 
+	static LogColumn[] columnDefs = new LogColumn[] { gyroValue, ki, kd, out}; 
 
 	public static void logging() {
 		LCD.clear();

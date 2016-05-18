@@ -13,9 +13,9 @@ public class PIDcontroller {
 	
 
 	public PIDcontroller(){
-		this.Kp = 10;	//340                             
-		this.Ki = 0.5;	//50                              
-		this.Kd = 1;	//300 
+		this.Kp = 1;	//340                             
+		this.Ki = 0.01;	//50                              
+		this.Kd = 0.1;	//300 
 		
 	}
 	public double calcOutput(double value,double offset, double dt){
